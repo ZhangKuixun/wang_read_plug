@@ -1,4 +1,4 @@
-package xyz.monkeytong.hongbao.entity;
+package com.read.chajian.entity;
 
 /**
  * Created by USER on 2018/3/21.

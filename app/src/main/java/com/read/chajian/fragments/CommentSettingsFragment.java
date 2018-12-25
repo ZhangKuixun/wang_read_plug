@@ -1,4 +1,4 @@
-package xyz.monkeytong.hongbao.fragments;
+package com.read.chajian.fragments;
 
 import android.os.Build;
 import android.os.Bundle;
@@ -6,7 +6,8 @@ import android.preference.Preference;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceManager;
 import android.widget.Toast;
-import xyz.monkeytong.hongbao.R;
+
+import com.read.chajian.R;
 
 /**
  * Created by Zhongyi on 2/4/16.
@@ -21,7 +22,7 @@ public class CommentSettingsFragment extends PreferenceFragment {
 
     private void setPrefListeners() {
         Preference updatePref = findPreference("pref_comment_switch");
-        if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
             updatePref.setEnabled(false);
         }
         Toast.makeText(getActivity(), "该功能尚处于实验中,只能自动填充感谢语,无法直接发送.", Toast.LENGTH_LONG).show();

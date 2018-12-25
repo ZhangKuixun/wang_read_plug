@@ -1,11 +1,9 @@
-package xyz.monkeytong.hongbao.utils;
+package com.read.chajian.utils;
 
 import android.app.DownloadManager;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Environment;
-
-import java.net.URI;
 
 import static android.content.Context.DOWNLOAD_SERVICE;
 

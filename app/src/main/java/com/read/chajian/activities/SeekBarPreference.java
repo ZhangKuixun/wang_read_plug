@@ -1,4 +1,4 @@
-package xyz.monkeytong.hongbao.activities;
+package com.read.chajian.activities;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -7,7 +7,8 @@ import android.util.AttributeSet;
 import android.view.View;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import xyz.monkeytong.hongbao.R;
+
+import com.read.chajian.R;
 
 /**
  * Created by Zhongyi on 2/3/16.

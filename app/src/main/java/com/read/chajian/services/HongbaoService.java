@@ -1,45 +1,28 @@
-package xyz.monkeytong.hongbao.services;
+package com.read.chajian.services;
 
 import android.accessibilityservice.AccessibilityService;
-import android.accessibilityservice.GestureDescription;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.graphics.Rect;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Parcelable;
-import android.graphics.Path;
 import android.preference.PreferenceManager;
-import android.support.annotation.RequiresApi;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
-import android.view.accessibility.AccessibilityEventSource;
 import android.view.accessibility.AccessibilityNodeInfo;
-import android.util.DisplayMetrics;
 
-import com.blankj.utilcode.util.LogUtils;
 import com.blankj.utilcode.util.ObjectUtils;
-import com.blankj.utilcode.util.ToastUtils;
+import com.read.chajian.utils.HongbaoSignature;
+import com.read.chajian.utils.LogUtil;
+import com.read.chajian.utils.PowerUtil;
 
-import xyz.monkeytong.hongbao.entity.RlEntiity;
-import xyz.monkeytong.hongbao.utils.HongbaoSignature;
-import xyz.monkeytong.hongbao.utils.LogUtil;
-import xyz.monkeytong.hongbao.utils.PowerUtil;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class HongbaoService extends AccessibilityService implements SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String WECHAT_DETAILS_EN = "Details";
@@ -54,11 +37,6 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
     private static final String WECHAT_LUCKMONEY_DETAIL_ACTIVITY = "LuckyMoneyDetailUI";
     private static final String WECHAT_LUCKMONEY_GENERAL_ACTIVITY = "LauncherUI";
     private static final String WECHAT_LUCKMONEY_CHATTING_ACTIVITY = "ChattingUI";
-    private static final String HUOSHAN_GUANZHU_ACTIVITY = "follow.ui.FollowingActivity";
-    private static final String HUOSHAN_TITLE_PERSON = "关注的人";
-    private static final String HUOSHAN_YI_GUANZHU = "已关注";
-
-    private static final String DIAN_ZAN_ID = "com.ss.android.ugc.aweme:id/a8w";
 
 
     private String currentActivityName = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
@@ -66,23 +44,17 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
     private AccessibilityNodeInfo rootNodeInfo, mReceiveNode, mUnpackNode;
     private boolean mLuckyMoneyPicked, mLuckyMoneyReceived;
     private int mUnpackCount = 0;
-    private boolean mMutex = false, mListMutex = false, mChatMutex = false;
+    private boolean mMutex = false, mListMutex = false, mTOULIStMutex = false, mQUHUAMutex = false;
     private HongbaoSignature signature = new HongbaoSignature();
 
     private PowerUtil powerUtil;
     private SharedPreferences sharedPreferences;
-    //搜索按钮id
-    private static final String DOUYIN_SEARCH_IMAGE_ID = "com.ss.android.ugc.aweme:id/a1c";
 
-    //editview id
-    private static final String DOUYIN_SEARCH_EDITVIEW = "com.ss.android.ugc.aweme:id/kc";
 
-    //点击视频所处于的状态的android.support.v7.widget.RecyclerView
+    private static final String QU_TOUTIAO_MAIN = "com.jifen.qkbase.main.MainActivity";
 
-    private static final String DOUYIN_RECYCLERVIEW = "com.ss.android.ugc.aweme:id/g8";
 
-    //评论内容
-    private static final String COMMENT_PINGLUN = "com.ss.android.ugc.aweme:id/r3";
+    private static final String ReadActivity = "content.view.activity.NewsDetailActivity";
 
     /**
      * AccessibilityEvent
@@ -92,130 +64,304 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
     @Override
     public void onAccessibilityEvent(AccessibilityEvent event) {
         LogUtil.e(event.getEventType());
-        if (sharedPreferences == null) return;
-
+        //设置当前的activity
         setCurrentActivityName(event);
-        if (!mMutex) {
-            mMutex = true;
-            watchList(event);
-            mMutex = false;
-        }
-//
-        if (!mListMutex) {
-            mListMutex = true;
-            clickVideo(event);
-            mListMutex = false;
-        }
-//        LookViedo(event);
-        clickZanComment(event);
-
-
-        /* 检测通知消息 */
-
-//            if (sharedPreferences.getBoolean("pref_watch_notification", false) && watchNotifications(event)) {
-//                return;
-//            }
-//            if (sharedPreferences.getBoolean("pref_watch_list", false) && watchList(event)){
-//                return;
-//            }
-//            mListMutex = false;
+//        if (TouTiaoTui()) {
+//            AppUtils.launchApp("com.cashtoutiao");
 //        }
+        if (event.getEventType() == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
+            SuaaTouTiao(event);
+            if (!mQUHUAMutex) {
+                mQUHUAMutex = true;
+                clickTouTiaoContent(event);
+            }
 
-//        if (!mChatMutex) {
-//            mChatMutex = true;
-//            if (sharedPreferences.getBoolean("pref_watch_chat", false)) watchChat(event);
-//            mChatMutex = false;
-//        }
+
+        }
+        if (!mTOULIStMutex) {
+            mTOULIStMutex = true;
+            clickTouTiaoTWO(event);
+        }
+
+
     }
 
-    //视频点击处理
-    private void clickZanComment(AccessibilityEvent event) {
-        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            return;
-        }
-        //视频播放界面
-        if (currentActivityName.contains("com.ss.android.ugc.live/.detail.ui.DetailActivity")) {
-            final AccessibilityNodeInfo info = event.getSource();
-            LogUtil.e("zan");
-//                printPacketInfo(info);
-            try {
+    //点击首页的文章
+    private void clickTouTiaoTWO(final AccessibilityEvent event) {
+        final AccessibilityNodeInfo eventSource = getRootInActiveWindow();
+        int time = 2000;
+        try {
+            final int[] is = {};
+            LogUtil.e(currentActivityName);
+            if (currentActivityName.contains(QU_TOUTIAO_MAIN) || currentActivityName.contains(".main.MainTabActivity")) {
+                if (currentActivityName.contains(".main.MainTabActivity")) {
+                    time = 0;
+                }
                 mhandle.postDelayed(new Runnable() {
+
                     @Override
                     public void run() {
-                        List<AccessibilityNodeInfo> nodes;
-                        int zan = 0;
-                        nodes = info.findAccessibilityNodeInfosByViewId("com.ss.android.ugc.live:id/like_video");
-                        AccessibilityNodeInfo infos = nodes.get(0);
-                        if (ObjectUtils.isNotEmpty(infos)) {
-                            if (infos.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                        if (currentActivityName.contains(".main.MainTabActivity")) {
 
+                        }
+                        LogUtil.e(printPacketInfo(eventSource));
+                        try {
+                            AccessibilityNodeInfo nodes = recycleFindRecyView(eventSource, RECYCLERVIEWNAME, is);
+
+
+                            if (ObjectUtils.isNotEmpty(nodes)) {
+
+                                int count = nodes.getChildCount();
+                                LogUtil.e(count);
+                                if (count > 0) {
+                                    for (int i = 0; i < count; i++) {
+                                        AccessibilityNodeInfo ll = nodes.getChild(i);
+                                        if (ObjectUtils.isNotEmpty(ll)) {
+                                            if (ll.getClassName().equals("android.widget.FrameLayout")) {
+                                                mTOULIStMutex = false;
+                                                continue;
+                                            } else {
+                                                if (!printPacketInfo(ll).contains("视频") && !printPacketInfo(ll).contains("置顶") && !printPacketInfo(ll).contains("更新") && !printPacketInfo(ll).contains("热门")) {
+                                                    LogUtil.e(printPacketInfo(ll));
+                                                    LogUtil.e(ll.performAction(AccessibilityNodeInfo.ACTION_CLICK));
+                                                    mTOULIStMutex = false;
+                                                    return;
+                                                } else {
+                                                    LogUtil.e(printPacketInfo(ll));
+                                                    mTOULIStMutex = false;
+                                                    continue;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    mTOULIStMutex = false;
+                                } else {
+                                    mTOULIStMutex = false;
+                                }
+                            } else {
+                                mTOULIStMutex = false;
                             }
-                            LogUtil.e(infos);
-                            LogUtil.e(infos.getViewIdResourceName());
-                            LogUtil.e(infos.getDrawingOrder());
-                            LogUtil.e(infos.describeContents());
-                            LogUtil.e(infos.getRangeInfo());
+                        } catch (Exception e) {
+                            mTOULIStMutex = false;
+                            LogUtil.e(e);
                         }
                     }
-                }, 2000);
-            } catch (Exception e) {
-                LogUtil.e(e);
+                }, time);
+
+
+            } else {
+                mTOULIStMutex = false;
             }
+            LogUtil.e(mTOULIStMutex);
+        } catch (Exception e) {
+            LogUtil.e(e);
+            mTOULIStMutex = false;
         }
     }
 
-    private void LookViedo(AccessibilityEvent event) {
-        if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-            return;
-        }
-        LogUtil.e(currentActivityName);
+
+    //点击首页刷新
+    private boolean SuaaTouTiao(AccessibilityEvent event) {
         try {
-            //抖音主界面 跳转自动搜索用户界面
-            if (currentActivityName.contains("main.MainActivity")) {
+            AccessibilityNodeInfo nodes = null;
+            final int[] is = {};
+            final AccessibilityNodeInfo eventSource = getRootInActiveWindow();
+            if (currentActivityName.contains(QU_TOUTIAO_MAIN)) {
 
-                findNodeByViewID(event.getSource(), DOUYIN_SEARCH_IMAGE_ID, 1);
-
-
-            }
-            //热门搜索界面
-            if (currentActivityName.contains("discover.activity.HotSearchAndDiscoveryActivity")) {
-                findNodeByViewID(event.getSource(), DOUYIN_SEARCH_EDITVIEW, 1);
-            }
-            //详情界面
-            if (currentActivityName.contains("profile.ui.UserProfileActivity")) {
-
-                findNodeByViewID(event.getSource(), DOUYIN_RECYCLERVIEW, 1);
-            }
-            //视频播放界面
-            if (currentActivityName.contains("detail.ui.DetailActivity")) {
-                final AccessibilityNodeInfo info = event.getSource();
-
-//                printPacketInfo(info);
-                mhandle.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        findNodeByViewID(info, COMMENT_PINGLUN, 1);
+                if (nodes == null) {
+                    nodes = recycleFindRecyView(eventSource, Button_NAME, is);
+                    if (ObjectUtils.isNotEmpty(nodes)) {
+                        if (nodes.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                            return true;
+                        }
                     }
-                }, 2000);
+                } else {
+                    nodes.performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                    return true;
+                }
 
+
+            } else if (currentActivityName.contains(".main.MainTabActivity")) {
+                LogUtil.e(printPacketInfo(eventSource));
+
+            } else {
+                return false;
             }
 
         } catch (Exception e) {
             LogUtil.e(e);
+            return false;
+        }
+        return false;
+    }
+
+    //点击头条推送
+    private boolean TouTiaoTui() {
+        try {
+            AccessibilityNodeInfo nodes = null;
+            final int[] is = {};
+
+            final AccessibilityNodeInfo eventSource = getRootInActiveWindow();
+//            LogUtil.e(eventSource);
+            if (nodes == null) {
+                nodes = recycleFindRecyView(eventSource, TEXTVIEW_NAME, is);
+                if (ObjectUtils.isNotEmpty(nodes)) {
+                    if (nodes.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                        return true;
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+
+
+        } catch (Exception e) {
+            LogUtil.e(e);
+            return false;
+        }
+        return false;
+    }
+
+
+    //点击Web内容
+    private void clickTouTiaoContent(AccessibilityEvent event) {
+
+        try {
+            if (currentActivityName.contains(ReadActivity) || currentActivityName.contains("newsdetail.NewsDetailActivity")||currentActivityName.contains("ImageNewsDetailActivity")) {
+
+                final AccessibilityNodeInfo eventSource = getRootInActiveWindow();
+                int time = 2800;
+                if (currentActivityName.contains("newsdetail.NewsDetailActivity")||currentActivityName.contains("ImageNewsDetailActivity")) {
+
+                    time = 6000;
+                }
+
+
+                mhandle.postDelayed(new Runnable() {
+
+                    @Override
+                    public void run() {
+                        if (currentActivityName.contains("newsdetail.NewsDetailActivity")||currentActivityName.contains("ImageNewsDetailActivity")) {
+
+                            backFragment();
+                            mQUHUAMutex = false;
+                            return;
+                        }
+                        AccessibilityNodeInfo node = recycleFindListView(eventSource);
+                        LogUtil.e(printPacketInfo(eventSource));
+                        if (ObjectUtils.isNotEmpty(node)) {
+
+                            if (node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
+                                mhandle.postDelayed(this, 3000);
+                            } else {
+                                backFragment();
+                                mQUHUAMutex = false;
+                                return;
+                            }
+
+                        } else {
+                            mQUHUAMutex = false;
+                        }
+
+
+                    }
+                }, time);
+
+
+            } else {
+                mQUHUAMutex = false;
+            }
+        } catch (Exception e) {
+            mQUHUAMutex = false;
+        }
+    }
+
+    private static final String WebViewClassName = "android.webkit.WebView";
+
+    public AccessibilityNodeInfo recycleFindListView(AccessibilityNodeInfo node) {
+        if (ObjectUtils.isNotEmpty(node)) {
+            if (node.getChildCount() == 0) {
+                return null;
+            } else {//listview下面必定有子元素，所以放在此时判断
+                for (int i = 0; i < node.getChildCount(); i++) {
+                    if (WebViewClassName.equals(node.getClassName()) && node.isScrollable()) {
+                        return node;
+                    } else if (node.getChild(i) != null) {
+                        AccessibilityNodeInfo result = recycleFindListView(node.getChild(i));
+                        if (result == null) {
+                            continue;
+                        } else {
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private static final String RECYCLERVIEWNAME = "android.support.v7.widget.RecyclerView";
+
+    private static final String Button_NAME = "android.widget.Button";
+
+    private static final String TEXTVIEW_NAME = "android.widget.TextView";
+
+    public AccessibilityNodeInfo recycleFindRecyView(AccessibilityNodeInfo node, String type, int... ints) {
+        if (node == null) {
+            return null;
         }
 
+        String name = node.getClassName().toString();
+        if (type.equals(RECYCLERVIEWNAME)) {
+            if (name.equals(type)) {
+                return node;
+            }
+        } else if (type.equals(Button_NAME)) {
+            LogUtil.e(name + " " + node.getText());
+            if (name.equals(type) && node.getText().equals("刷新")) {
 
+                LogUtil.e(printPacketInfo(node));
+                return node;
+            }
+        } else if (type.equals(TEXTVIEW_NAME)) {
+            if (name.equals(type) && node.getText().equals("忽略")) {
+                LogUtil.e(printPacketInfo(node));
+                return node;
+            }
+        }
+
+        int count = node.getChildCount();
+        if (count > 0) {
+            tabcount++;
+            int len = ints.length + 1;
+            int[] newInts = Arrays.copyOf(ints, len);
+
+            for (int i = 0; i < count; i++) {
+                newInts[len - 1] = i;
+                AccessibilityNodeInfo result = recycleFindRecyView(node.getChild(i), type, newInts);
+                if (result == null) {
+                    continue;
+                } else {
+                    return result;
+                }
+            }
+            tabcount--;
+        }
+        return null;
     }
+
 
     private static int tabcount = -1;
     private static StringBuilder sb;
 
-    public static void printPacketInfo(AccessibilityNodeInfo root) {
+    public static String printPacketInfo(AccessibilityNodeInfo root) {
         sb = new StringBuilder();
         tabcount = 0;
         int[] is = {};
         analysisPacketInfo(root, is);
-        LogUtil.e(sb.toString());
+        return sb.toString();
     }
 
     //打印此时的界面状况,便于分析
@@ -240,10 +386,22 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
         name = split[split.length - 1];
         if ("TextView".equals(name)) {
             CharSequence text = info.getText();
+            if ("刷新".equals(text)) {
+                LogUtil.e(info.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK));
+            }
             sb.append("text:").append(text);
         } else if ("Button".equals(name)) {
             CharSequence text = info.getText();
             sb.append("Button:").append(text);
+        } else if ("View".equals(name)) {
+            CharSequence text = info.getText();
+//            if (text.toString().contains("展开全文")) {
+//                LogUtil.e("ffasf");
+//                LogUtil.e(info);
+//                LogUtil.e(info.getParent());
+//                LogUtil.e(info.performAction(AccessibilityNodeInfo.ACTION_CLICK));
+//            }
+            sb.append("View:").append(text);
         } else {
             sb.append(name);
         }
@@ -307,42 +465,7 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
 //        }
 //
 //    }
-//    private void watchChat(AccessibilityEvent event) {
-//        this.rootNodeInfo = getRootInActiveWindow();
-//
-//        if (rootNodeInfo == null) return;
-//
-//        mReceiveNode = null;
-//        mUnpackNode = null;
-//
-//        checkNodeInfo(event.getEventType());
-//
-//        /* 如果已经接收到红包并且还没有戳开 */
-//        if (mLuckyMoneyReceived && !mLuckyMoneyPicked && (mReceiveNode != null)) {
-//            mMutex = true;
-//
-//            mReceiveNode.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
-//            mLuckyMoneyReceived = false;
-//            mLuckyMoneyPicked = true;
-//        }
-//        /* 如果戳开但还未领取 */
-//        if (mUnpackCount == 1 && (mUnpackNode != null)) {
-//            int delayFlag = sharedPreferences.getInt("pref_open_delay", 0) * 1000;
-//            new android.os.Handler().postDelayed(
-//                    new Runnable() {
-//                        public void run() {
-//                            try {
-//                                openPacket();
-//                            } catch (Exception e) {
-//                                mMutex = false;
-//                                mLuckyMoneyPicked = false;
-//                                mUnpackCount = 0;
-//                            }
-//                        }
-//                    },
-//                    delayFlag);
-//        }
-//    }
+
 
 //    private void openPacket() {
 //        DisplayMetrics metrics = getResources().getDisplayMetrics();
@@ -397,127 +520,19 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
             );
 
 
-            getPackageManager().getActivityInfo(componentName, 0);
-
             currentActivityName = componentName.flattenToShortString();
-            //需要清理保存的数据
-//            if (!currentActivityName.contains("FollowingActivity")) {
-//                clickMap.clear();
-//            }
+
             LogUtil.e(currentActivityName);
-        } catch (PackageManager.NameNotFoundException e) {
-            currentActivityName = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
+        } catch (Exception e) {
+            LogUtil.e(e);
+//            currentActivityName = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
         }
     }
 
-    private int clickNum = 0;
 
     //所有未点击的元素集合
     Map<Integer, Boolean> clickMap = new HashMap<Integer, Boolean>();
-    Map<Integer, Boolean> clickVideoMap = new HashMap<Integer, Boolean>();
-    private boolean videoAllClick = false;
 
-    //点击视频
-    private synchronized void clickVideo(AccessibilityEvent event) {
-
-        //元素的个数
-        int Num = 0;
-
-        LogUtil.e(currentActivityName);
-        try {
-            if (currentActivityName.contains("UserProfileActivity")) {
-
-                AccessibilityNodeInfo eventSource = event.getSource();
-                List<AccessibilityNodeInfo> nodes = eventSource.findAccessibilityNodeInfosByViewId("com.ss.android.ugc.live:id/tl");
-//                LogUtil.e(nodes.toString());
-                if (ObjectUtils.isNotEmpty(nodes)) {
-                    AccessibilityNodeInfo rlInfo = nodes.get(0);
-                    rlInfo.refresh();
-                    Num = rlInfo.getChildCount();
-                    if (Num == 0) {
-                        return;
-                    }
-
-                    for (int i = 0; i < Num; i++) {
-//                        LogUtil.e(rlInfo.getChild(i));
-//                        LogUtil.e(rlInfo.getChild(i).getChild(0).hashCode());
-                        if (!clickVideoMap.containsKey(rlInfo.getChild(i).getChild(0).hashCode())) {
-                            clickVideoMap.put(rlInfo.getChild(i).getChild(0).hashCode(), false);
-                        }
-                    }
-//                    rlInfo.getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                    Iterator iter = clickVideoMap.entrySet().iterator();
-                    if (!videoAllClick) {
-                        while (iter.hasNext()) {
-
-                            Map.Entry entry = (Map.Entry) iter.next();
-                            int key = (int) entry.getKey();
-                            boolean val = (boolean) entry.getValue();
-                            if (!val) {
-                                videoAllClick = val;
-                                //记录是否点击过
-                                clickVideoMap.put(key, true);
-                                for (int i = 0; i < Num; i++) {
-                                    if (rlInfo.getChild(i).getChild(0).hashCode() == key) {
-                                        rlInfo.getChild(i).getChild(0).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                        break;
-                                    }
-                                }
-
-                                break;
-                            } else {
-                                videoAllClick = val;
-                            }
-                        }
-                    }
-                    LogUtil.e(clickVideoMap.values());
-                    LogUtil.e(videoAllClick);
-
-                    //全部点击完自动滑动界面
-                    if (rlInfo.isScrollable()) {
-
-                        if (videoAllClick) {
-                            LogUtil.e("滑动没完");
-                            //滑动会有错乱。暂时不做
-//                            rlInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD);
-//                            if (rlInfo.getActionList().contains(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) {
-//                                if (clickVideoMap.values().toString().contains("false")) {
-//                                    videoAllClick = false;
-//                                } else {
-//                                    videoAllClick = true;
-//                                }
-//                                if (videoAllClick) {
-                            clickVideoMap.clear();
-                            backFragment();
-                            //               }
-
-                        }
-                        videoAllClick = false;
-                        //}
-                    }
-                } else {
-                    if (videoAllClick) {
-                        LogUtil.e("滑动到底");
-                        backFragment();
-                        clickVideoMap.clear();
-                        videoAllClick = false;
-                    }
-                }
-
-
-            } else {
-                if (currentActivityName.contains("FollowingActivity")) {
-                    clickMap.clear();
-                }
-            }
-        } catch (
-                Exception e)
-
-        {
-            LogUtil.e(e);
-        }
-
-    }
 
     public static AccessibilityNodeInfo findNodeByViewName(AccessibilityNodeInfo info, String viewName) {
         String name = info.getClassName().toString();
@@ -625,97 +640,6 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
     }
 
 
-    //关注列表点击
-    private void watchList(AccessibilityEvent event) {
-        //元素的个数
-        int Num = 0;
-//        if (currentActivityName.contains("UserProfileActivity")) {
-//            backFragment();
-//            return;
-//        }
-        try {
-            AccessibilityNodeInfo eventSource = event.getSource();
-            // Not a message
-
-            if (currentActivityName.contains("FollowingActivity")) {
-//                if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED) {
-////                if (event.getEventType() != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED || eventSource == null) {
-////                    return;
-////                }
-//                }
-
-
-//            List<AccessibilityNodeInfo> nodes = eventSource.findAccessibilityNodeInfosByText(HUOSHAN_YI_GUANZHU);
-                //获取RecyclerView
-                List<AccessibilityNodeInfo> nodes = eventSource.findAccessibilityNodeInfosByViewId("com.ss.android.ugc.live:id/recycler_view");
-
-                AccessibilityNodeInfo rlInfo = nodes.get(0);
-                rlInfo.refresh();
-
-//                rlInfo.recycle();
-
-
-                if (ObjectUtils.isNotEmpty(nodes)) {
-
-                    Num = rlInfo.getChildCount();
-                    LogUtil.e(Num);
-                    if (Num == 0) {
-                        return;
-                    }
-                    //添加所有的RecyclerView元素
-                    for (int i = 0; i < Num; i++) {
-                        LogUtil.e(rlInfo.getChild(i));
-                        LogUtil.e(rlInfo.getChild(i).hashCode());
-                        if (!clickMap.containsKey(rlInfo.getChild(i).hashCode())) {
-                            clickMap.put(rlInfo.getChild(i).hashCode(), false);
-                        }
-                    }
-                    Iterator iter = clickMap.entrySet().iterator();
-                    int all = 0;
-                    while (iter.hasNext()) {
-
-                        Map.Entry entry = (Map.Entry) iter.next();
-                        int key = (int) entry.getKey();
-                        boolean val = (boolean) entry.getValue();
-                        if (!val) {
-                            //记录是否点击过
-                            clickMap.put(key, true);
-                            for (int i = 0; i < Num; i++) {
-                                if (rlInfo.getChild(i).hashCode() == key) {
-                                    rlInfo.getChild(i).performAction(AccessibilityNodeInfo.ACTION_CLICK);
-                                    break;
-                                }
-                            }
-                            all++;
-                            break;
-                        }
-
-
-                    }
-
-                    //全部点击完自动滑动界面
-                    if (rlInfo.isScrollable()) {
-                        if (all == 0) {
-                            if (!rlInfo.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
-                                backFragment();
-                            }
-                        }
-                    }
-                    LogUtil.e(clickMap.keySet().toString());
-                    LogUtil.e(clickMap.values().toString());
-                    LogUtil.e(rlInfo);
-                } else {
-                    LogUtil.e("assa");
-                }
-            }
-
-
-        } catch (Exception e) {
-            LogUtil.e(e);
-        }
-
-//        return false;
-    }
 
 
     @Override
@@ -781,51 +705,6 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
         return null;
     }
 
-    private void checkNodeInfo(int eventType) {
-        if (this.rootNodeInfo == null) return;
-
-        if (signature.commentString != null) {
-            sendComment();
-            signature.commentString = null;
-        }
-
-        /* 聊天会话窗口，遍历节点匹配“领取红包”和"查看红包" */
-        AccessibilityNodeInfo node1 = (sharedPreferences.getBoolean("pref_watch_self", false)) ?
-                this.getTheLastNode(WECHAT_VIEW_OTHERS_CH, WECHAT_VIEW_SELF_CH) : this.getTheLastNode(WECHAT_VIEW_OTHERS_CH);
-        if (node1 != null &&
-                (currentActivityName.contains(WECHAT_LUCKMONEY_CHATTING_ACTIVITY)
-                        || currentActivityName.contains(WECHAT_LUCKMONEY_GENERAL_ACTIVITY))) {
-            String excludeWords = sharedPreferences.getString("pref_watch_exclude_words", "");
-            if (this.signature.generateSignature(node1, excludeWords)) {
-                mLuckyMoneyReceived = true;
-                mReceiveNode = node1;
-                Log.d("sig", this.signature.toString());
-            }
-            return;
-        }
-
-        /* 戳开红包，红包还没抢完，遍历节点匹配“拆红包” */
-        AccessibilityNodeInfo node2 = findOpenButton(this.rootNodeInfo);
-        if (node2 != null && "android.widget.Button".equals(node2.getClassName()) && currentActivityName.contains(WECHAT_LUCKMONEY_RECEIVE_ACTIVITY)) {
-            mUnpackNode = node2;
-            mUnpackCount += 1;
-            return;
-        }
-
-        /* 戳开红包，红包已被抢完，遍历节点匹配“红包详情”和“手慢了” */
-        boolean hasNodes = this.hasOneOfThoseNodes(
-                WECHAT_BETTER_LUCK_CH, WECHAT_DETAILS_CH,
-                WECHAT_BETTER_LUCK_EN, WECHAT_DETAILS_EN, WECHAT_EXPIRES_CH);
-        if (mMutex && eventType == AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED && hasNodes
-                && (currentActivityName.contains(WECHAT_LUCKMONEY_DETAIL_ACTIVITY)
-                || currentActivityName.contains(WECHAT_LUCKMONEY_RECEIVE_ACTIVITY))) {
-            mMutex = false;
-            mLuckyMoneyPicked = false;
-            mUnpackCount = 0;
-            performGlobalAction(GLOBAL_ACTION_BACK);
-            signature.commentString = generateCommentString();
-        }
-    }
 
     private void sendComment() {
         try {
@@ -895,6 +774,7 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
         this.powerUtil = new PowerUtil(this);
         Boolean watchOnLockFlag = sharedPreferences.getBoolean("pref_watch_on_lock", false);
         this.powerUtil.handleWakeLock(watchOnLockFlag);
+
     }
 
     @Override
@@ -927,4 +807,7 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
             return wordsArray[(int) (Math.random() * wordsArray.length)];
         }
     }
+
+
+
 }

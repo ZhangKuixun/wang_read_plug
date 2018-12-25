@@ -1,4 +1,4 @@
-package xyz.monkeytong.hongbao.utils;
+package com.read.chajian.utils;
 
 import android.graphics.Rect;
 import android.view.accessibility.AccessibilityNodeInfo;

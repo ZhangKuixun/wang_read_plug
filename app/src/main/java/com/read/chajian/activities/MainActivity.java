@@ -1,4 +1,4 @@
-package xyz.monkeytong.hongbao.activities;
+package com.read.chajian.activities;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.annotation.TargetApi;
@@ -17,9 +17,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import xyz.monkeytong.hongbao.R;
-import xyz.monkeytong.hongbao.utils.ConnectivityUtil;
-import xyz.monkeytong.hongbao.utils.UpdateTask;
+
+import com.read.chajian.R;
 
 import java.util.List;
 
@@ -40,7 +39,6 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
         setContentView(R.layout.activity_main);
         pluginStatusText = (TextView) findViewById(R.id.layout_control_accessibility_text);
         pluginStatusIcon = (ImageView) findViewById(R.id.layout_control_accessibility_icon);
-
         handleMaterialStatusBar();
 
         explicitlyLoadPreferences();
@@ -61,7 +59,7 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void handleMaterialStatusBar() {
         // Not supported in APK level lower than 21
-        if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
 
         Window window = this.getWindow();
 
@@ -107,21 +105,6 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
 
     }
 
-    public void openGitHub(View view) {
-//        Intent webViewIntent = new Intent(this, WebViewActivity.class);
-//        webViewIntent.putExtra("title", getString(R.string.webview_github_title));
-//        webViewIntent.putExtra("url", "https://github.com/geeeeeeeeek/WeChatLuckyMoney");
-//        startActivity(webViewIntent);
-    }
-
-    public void openUber(View view) {
-//        Intent webViewIntent = new Intent(this, WebViewActivity.class);
-//        webViewIntent.putExtra("title", getString(R.string.webview_uber_title));
-//        String[] couponList = new String[]{"https://dc.tt/oTLtXH2BHsD", "https://dc.tt/ozFJHDnfLky"};
-//        int index = (int) (Math.random() * 2);
-//        webViewIntent.putExtra("url", couponList[index]);
-//        startActivity(webViewIntent);
-    }
 
     public void openSettings(View view) {
         Intent settingsIntent = new Intent(this, SettingsActivity.class);
@@ -146,6 +129,7 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
         } else {
             pluginStatusText.setText(R.string.service_on);
             pluginStatusIcon.setBackgroundResource(R.mipmap.ic_start);
+
         }
     }
 
@@ -158,7 +142,7 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
         List<AccessibilityServiceInfo> accessibilityServices =
                 accessibilityManager.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_GENERIC);
         for (AccessibilityServiceInfo info : accessibilityServices) {
-            if (info.getId().equals(getPackageName() + "/.services.HongbaoService")) {
+            if (info.getId().equals(getPackageName() + "/.services.ReadToutiaoService")) {
                 return true;
             }
         }

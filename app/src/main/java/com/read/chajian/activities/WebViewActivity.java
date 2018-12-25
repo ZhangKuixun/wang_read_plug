@@ -1,4 +1,4 @@
-package xyz.monkeytong.hongbao.activities;
+package com.read.chajian.activities;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -16,8 +16,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
 import android.widget.Toast;
-import xyz.monkeytong.hongbao.R;
-import xyz.monkeytong.hongbao.utils.DownloadUtil;
+
+import com.read.chajian.R;
+import com.read.chajian.utils.DownloadUtil;
 
 /**
  * Created by Zhongyi on 1/19/16.
@@ -91,7 +92,7 @@ public class WebViewActivity extends Activity {
     private void loadUI() {
         setContentView(R.layout.activity_webview);
 
-        if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
 
         Window window = this.getWindow();
 

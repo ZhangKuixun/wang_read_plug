@@ -1,42 +1,128 @@
- apply plugin: 'com.android.application'
-
+apply plugin: 'com.android.application'
+Properties props = new Properties()
+props.load(project.rootProject.file('config.properties').newDataInputStream())
 android {
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
-    useLibrary 'org.apache.http.legacy'
+    compileSdkVersion 27
+    buildToolsVersion "27.0.3"
     defaultConfig {
-        applicationId "xyz.monkeytong.hongbao"
+        applicationId props['S_APP_ID']
         minSdkVersion 19
-        targetSdkVersion 25
-        versionCode 5
-        versionName "v5.0.10"
+        targetSdkVersion 27
+        versionCode 1
+        versionName "1.0.1"
+        multiDexEnabled true
     }
 
     signingConfigs {
-        releaseConfig {
-            storeFile file("../monkeytong.jks")
-            storePassword project.hasProperty("KEYSTORE_PASS") ? KEYSTORE_PASS : System.getenv("KEYSTORE_PASS")
-            keyAlias project.hasProperty("ALIAS_NAME") ? ALIAS_NAME : System.getenv("ALIAS_NAME")
-            keyPassword project.hasProperty("ALIAS_PASS") ? ALIAS_PASS : System.getenv("ALIAS_PASS")
+        release {
+            keyAlias props['KEY_ALIAS']
+            keyPassword props['KEY_PASSWORD']
+            storeFile file(props['KEYSTORE_FILE'])
+            storePassword props['KEYSTORE_PASSWORD']
         }
     }
 
     buildTypes {
-        release {
-            minifyEnabled true
+        debug {
+
+            buildConfigField "String", "BASE_URL", "\"" + props['S_BASE_URL'] + "\""
+            buildConfigField "String", "WX_APP_ID", "\"" + props['S_WX_APP_ID_VALUE'] + "\""
+            buildConfigField "String", "BUILD_NAME", "\"" + props['S_APP_BUILD_NAME'] + "\""
+
+            minifyEnabled false
+            zipAlignEnabled false
+            shrinkResources false
+
+            signingConfig signingConfigs.release
+
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.releaseConfig
+
         }
+
+
+        release {
+            buildConfigField "String", "BASE_URL", "\"" + props['S_BASE_URL'] + "\""
+            buildConfigField "String", "WX_APP_ID", "\"" + props['S_WX_APP_ID_VALUE'] + "\""
+            buildConfigField "String", "BUILD_NAME", "\"" + props['S_APP_BUILD_NAME'] + "\""
+
+            minifyEnabled true
+            zipAlignEnabled false
+            shrinkResources false
+
+            signingConfig signingConfigs.release
+
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+
+            android.applicationVariants.all { variant ->
+                variant.outputs.all {
+                    outputFileName = props['S_APP_BUILD_NAME'] + "_android_v${defaultConfig.versionName}_${defaultConfig.versionCode}_${variant.productFlavors[0].name}.apk"
+                }
+            }
+        }
+    }
+
+
+    flavorDimensions 'default'
+
+    productFlavors {
+        official {
+        }
+
+        turtle_cardk {
+        }
+        turtle_scank {
+        }
+        turle_treasure {
+
+        }
+        turle_amazon {
+
+        }
+        turle_lenovo {
+
+        }
+        turle_wap {
+
+        }
+        turle_official_website {
+
+        }
+
+        productFlavors.all { flavor ->
+            flavor.manifestPlaceholders = [UMENG_CHANNEL_VALUE: name]
+        }
+
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+    packagingOptions {
+        doNotStrip '*/mips/*.so'
+        doNotStrip '*/mips64/*.so'
     }
 }
 
- dependencies {
-     compile fileTree(include: ['*.jar'], dir: 'libs')
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
 
-     //其中latest.release指代最新版本号，也可以指定明确的版本号，例如2.2.0
-     compile 'com.android.support:support-v4:25.1.0'
-     compile 'com.android.support:appcompat-v7:25.1.0'
+    //其中latest.release指代最新版本号，也可以指定明确的版本号，例如2.2.0
+    implementation 'com.android.support:support-v4:27.1.1'
+    implementation 'com.android.support:design:27.1.1'
+    implementation 'com.android.support:appcompat-v7:27.1.1'
+    // 工具集
+    implementation 'com.blankj:utilcode:1.17.2'
 
-     // 工具集
-     compile'com.blankj:utilcode:1.12.0'
- }
+    // 网络框架
+    implementation 'com.lzy.net:okgo:3.0.4'
+    implementation 'com.lzy.widget:imagepicker:0.5.5'
+    // 事件总线
+    implementation 'org.greenrobot:eventbus:3.1.1'
+
+    // 视图依赖注入
+    implementation 'com.jakewharton:butterknife:8.8.1'
+    annotationProcessor 'com.jakewharton:butterknife-compiler:8.8.1'
+    compile 'com.android.support:multidex:1.0.0'
+}
