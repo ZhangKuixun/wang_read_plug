@@ -18,6 +18,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+import com.baina.floatwindowlib.freeposition.DraggableFloatView;
+import com.baina.floatwindowlib.freeposition.DraggableFloatWindow;
+import com.blankj.utilcode.util.LogUtils;
+import com.blankj.utilcode.util.ToastUtils;
 import com.read.chajian.R;
 
 import java.util.List;
@@ -30,12 +34,12 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
     private ImageView pluginStatusIcon;
     //AccessibilityService 管理
     private AccessibilityManager accessibilityManager;
+    private DraggableFloatWindow mFloatWindow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        //CrashReport.initCrashReport(getApplicationContext(), "900019352", false);
-//        Bugly.init(getApplicationContext(), "900019352", false);
+
         setContentView(R.layout.activity_main);
         pluginStatusText = (TextView) findViewById(R.id.layout_control_accessibility_text);
         pluginStatusIcon = (ImageView) findViewById(R.id.layout_control_accessibility_icon);
@@ -47,6 +51,16 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
         accessibilityManager = (AccessibilityManager) getSystemService(Context.ACCESSIBILITY_SERVICE);
         accessibilityManager.addAccessibilityStateChangeListener(this);
         updateServiceStatus();
+
+
+        mFloatWindow = DraggableFloatWindow.getDraggableFloatWindow(MainActivity.this, null);
+        mFloatWindow.applyOrShowFloatWindow(MainActivity.this);
+        mFloatWindow.setOnTouchButtonListener(new DraggableFloatView.OnTouchButtonClickListener() {
+            @Override
+            public void onClick(View view) {
+                ToastUtils.showShort("click");
+            }
+        });
     }
 
     private void explicitlyLoadPreferences() {
@@ -59,7 +73,7 @@ public class MainActivity extends Activity implements AccessibilityManager.Acces
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void handleMaterialStatusBar() {
         // Not supported in APK level lower than 21
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
+        if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) return;
 
         Window window = this.getWindow();
 

@@ -10,15 +10,26 @@ import android.view.KeyEvent;
 import android.view.accessibility.AccessibilityEvent;
 import android.view.accessibility.AccessibilityNodeInfo;
 
+import com.baina.floatwindowlib.freeposition.DraggableFloatWindow;
 import com.blankj.utilcode.util.LogUtils;
 import com.blankj.utilcode.util.ObjectUtils;
+import com.read.chajian.Client;
 import com.read.chajian.QuTouTiao;
+import com.read.chajian.entity.event.BackEvent;
+import com.read.chajian.manager.ActivityMgr;
 import com.read.chajian.utils.HongbaoSignature;
 import com.read.chajian.utils.LogUtil;
 import com.read.chajian.utils.NodesInfo;
 import com.read.chajian.utils.PowerUtil;
 
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
+
+import java.util.Random;
+
 import static android.content.ContentValues.TAG;
+import static com.read.AppContext.getInstance;
 import static com.read.AppContext.pkgqukan;
 
 
@@ -27,11 +38,14 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
 
     private static final String WECHAT_LUCKMONEY_GENERAL_ACTIVITY = "LauncherUI";
 
-
+    private static final String READ_ACTIVITY = ".NewsDetailActivity";
+    private static final String IMAGEREAD_ACTIVITY = ".ImageNewsDetailActivity";
+    private static final String VIDEO_ACTIVITY = ".VideoNewsDetailActivity";
+    //领取金币 专用取值
+    private int mSign = 0;
     private String currentActivityName = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
     Handler mhandle = new Handler();
 
-    private HongbaoSignature signature = new HongbaoSignature();
 
     private PowerUtil powerUtil;
     private SharedPreferences sharedPreferences;
@@ -40,8 +54,46 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
     private static final String QU_TOUTIAO_MAIN = ".main.MainActivity";
 
     private String packageName;
-    private static final String READ_ACTIVITY = ".NewsDetailActivity";
-    private static final String IMAGEREAD_ACTIVITY = ".ImageNewsDetailActivity";
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+
+        EventBus.getDefault().register(this);
+    }
+
+    @Override
+    public void onInterrupt() {
+
+    }
+
+    @Override
+    protected boolean onKeyEvent(KeyEvent event) {
+        return super.onKeyEvent(event);
+
+    }
+
+    @Override
+    public void onServiceConnected() {
+        super.onServiceConnected();
+        this.watchFlagsFromPreference();
+    }
+
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
+        if (key.equals("pref_watch_on_lock")) {
+            Boolean changedValue = sharedPreferences.getBoolean(key, false);
+            this.powerUtil.handleWakeLock(changedValue);
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        this.powerUtil.handleWakeLock(false);
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
+    }
 
     /**
      * AccessibilityEvent
@@ -55,10 +107,6 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
             return;
         }
         packageName = event.getPackageName() + "";
-
-//        if (TouTiaoTui()) {
-//            AppUtils.launchApp("com.cashtoutiao");
-//        }
         int eventType = event.getEventType();
         if (eventType != AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED) {
             Log.w(TAG, AccessibilityEvent.eventTypeToString(eventType));
@@ -73,6 +121,7 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
 
             case AccessibilityEvent.TYPE_WINDOW_STATE_CHANGED:
                 LogUtil.e(eventType);
+
                 //设置当前的activity
                 setCurrentActivityName(event);
                 onContentChanged(event);
@@ -83,32 +132,16 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
                 //设置当前的activity
 
                 LogUtils.e("AccessibilityEvent.TYPE_VIEW_CLICKED");
-                onClick(event);
+//
+//                onClick(event);
+
+
                 break;
 
         }
 
     }
 
-    private void onClick(AccessibilityEvent event) {
-        LogUtils.e(TAG, "onClick " + event.getText());
-//        if (event.getSource() == null) {
-//            LogUtils.e(TAG, "onClick: event.getSource() is null, return");
-//            return;
-//        }
-        switch (packageName) {
-            case pkgqukan:
-                LogUtils.e(currentActivityName);
-                mhandle.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        backFragment();
-                    }
-                }, 10000);
-
-                break;
-        }
-    }
 
     /**
      * 设置当前的ActivtyName
@@ -125,11 +158,12 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
                     event.getPackageName().toString(),
                     event.getClassName().toString()
             );
-
-
             currentActivityName = componentName.flattenToShortString();
+            if (!"".equals(currentActivityName)) {
+                ActivityMgr.getInstance().setmCurrentActivity(currentActivityName);
 
-            LogUtil.e(currentActivityName);
+                LogUtils.e(currentActivityName);
+            }
         } catch (Exception e) {
             LogUtil.e(e);
         }
@@ -150,12 +184,51 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
         }
 
 
-        NodesInfo.show(source, TAG, "d");
+//        NodesInfo.show(source, TAG, "d");
 
         switch (packageName) {
             case pkgqukan:
+                final QuTouTiao mQuTouTiao = new QuTouTiao(this);
                 if (currentActivityName.contains(QU_TOUTIAO_MAIN)) {
-                    new QuTouTiao(this).onContentChanged(getRootInActiveWindow());
+//                    LogUtils.e(mQuTouTiao.printPacketInfo(getRootInActiveWindow()));
+
+                    if (ObjectUtils.isNotEmpty(mQuTouTiao.getNodeInfo(getRootInActiveWindow(), "领取"))) {
+                        mSign++;
+                        if (mSign > 10) {
+                            mQuTouTiao.getNodeInfo(getRootInActiveWindow(), "领取").getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK);
+                            mSign = 0;
+                        }
+                    }
+                    mQuTouTiao.onContentChanged(getRootInActiveWindow());
+
+                } else if (currentActivityName.contains(READ_ACTIVITY)) {
+                    mhandle.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            mQuTouTiao.clickTouTiaoContent(getRootInActiveWindow(), Client.WebViewClassName, 0);
+                        }
+                    }, 5000);
+
+                } else if (currentActivityName.contains(IMAGEREAD_ACTIVITY)) {
+                    mhandle.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            mQuTouTiao.clickTouTiaoContent(getRootInActiveWindow(), Client.VIEWPAGER_NAME, 1);
+                        }
+                    }, 5000);
+
+                } else if (currentActivityName.contains(VIDEO_ACTIVITY)) {
+                    int min = 4;
+                    int max = 8;
+                    Random random = new Random();
+                    int time = (random.nextInt(max) % (max - min + 1) + min) * 10000;
+                    mhandle.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            performGlobalAction(GLOBAL_ACTION_BACK);
+                        }
+                    }, time);
                 }
                 break;
 //            case pkgQQ:
@@ -165,179 +238,16 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
     }
 
 
-//    //点击首页刷新
-//    private boolean SuaaTouTiao(AccessibilityEvent event) {
-//        try {
-//            AccessibilityNodeInfo nodes = null;
-//            final int[] is = {};
-//            final AccessibilityNodeInfo eventSource = getRootInActiveWindow();
-//            if (currentActivityName.contains(QU_TOUTIAO_MAIN)) {
-//
-//                if (nodes == null) {
-//                    nodes = recycleFindRecyView(eventSource, Button_NAME, is);
-//                    if (ObjectUtils.isNotEmpty(nodes)) {
-//                        if (nodes.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-//                            return true;
-//                        }
-//                    }
-//                } else {
-//                    nodes.performAction(AccessibilityNodeInfo.ACTION_CLICK);
-//                    return true;
-//                }
-//
-//
-//            } else if (currentActivityName.contains(".main.MainTabActivity")) {
-////                LogUtil.e(printPacketInfo(eventSource));
-//
-//            } else {
-//                return false;
-//            }
-//
-//        } catch (Exception e) {
-//            LogUtil.e(e);
-//            return false;
-//        }
-//        return false;
-//    }
-
-//    //点击头条推送
-//    private boolean TouTiaoTui() {
-//        try {
-//            AccessibilityNodeInfo nodes = null;
-//            final int[] is = {};
-//
-//            final AccessibilityNodeInfo eventSource = getRootInActiveWindow();
-////            LogUtil.e(eventSource);
-//            if (nodes == null) {
-//                nodes = recycleFindRecyView(eventSource, TEXTVIEW_NAME, is);
-//                if (ObjectUtils.isNotEmpty(nodes)) {
-//                    if (nodes.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
-//                        return true;
-//                    } else {
-//                        return false;
-//                    }
-//                } else {
-//                    return false;
-//                }
-//            }
-//
-//
-//        } catch (Exception e) {
-//            LogUtil.e(e);
-//            return false;
-//        }
-//        return false;
-//    }
-
-
-//    //点击Web内容
-//    private void clickTouTiaoContent(AccessibilityEvent event) {
-//
-//        try {
-//            if (currentActivityName.contains(ReadActivity) || currentActivityName.contains("newsdetail.NewsDetailActivity")||currentActivityName.contains("ImageNewsDetailActivity")) {
-//
-//                final AccessibilityNodeInfo eventSource = getRootInActiveWindow();
-//                int time = 2800;
-//                if (currentActivityName.contains("newsdetail.NewsDetailActivity")||currentActivityName.contains("ImageNewsDetailActivity")) {
-//
-//                    time = 6000;
-//                }
-//
-//
-//                mhandle.postDelayed(new Runnable() {
-//
-//                    @Override
-//                    public void run() {
-//                        if (currentActivityName.contains("newsdetail.NewsDetailActivity")||currentActivityName.contains("ImageNewsDetailActivity")) {
-//
-//                            backFragment();
-//                            mQUHUAMutex = false;
-//                            return;
-//                        }
-//                        AccessibilityNodeInfo node = recycleFindListView(eventSource);
-////                        LogUtil.e(printPacketInfo(eventSource));
-//                        if (ObjectUtils.isNotEmpty(node)) {
-//
-//                            if (node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)) {
-//                                mhandle.postDelayed(this, 3000);
-//                            } else {
-//                                backFragment();
-//                                mQUHUAMutex = false;
-//                                return;
-//                            }
-//
-//                        } else {
-//                            mQUHUAMutex = false;
-//                        }
-//
-//
-//                    }
-//                }, time);
-//
-//
-//            } else {
-//                mQUHUAMutex = false;
-//            }
-//        } catch (Exception e) {
-//            mQUHUAMutex = false;
-//        }
-//    }
-
-    private static final String WebViewClassName = "android.webkit.WebView";
-
-    public AccessibilityNodeInfo recycleFindListView(AccessibilityNodeInfo node) {
-        if (ObjectUtils.isNotEmpty(node)) {
-            if (node.getChildCount() == 0) {
-                return null;
-            } else {//listview下面必定有子元素，所以放在此时判断
-                for (int i = 0; i < node.getChildCount(); i++) {
-                    if (WebViewClassName.equals(node.getClassName()) && node.isScrollable()) {
-                        return node;
-                    } else if (node.getChild(i) != null) {
-                        AccessibilityNodeInfo result = recycleFindListView(node.getChild(i));
-                        if (result == null) {
-                            continue;
-                        } else {
-                            return result;
-                        }
-                    }
-                }
-            }
-        }
-        return null;
+    /**
+     * 选择线路
+     *
+     * @param backEvent
+     */
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void selectline(BackEvent backEvent) {
+        performGlobalAction(GLOBAL_ACTION_BACK);
     }
 
-
-    @Override
-    protected boolean onKeyEvent(KeyEvent event) {
-        LogUtil.e("back");
-
-        return super.onKeyEvent(event);
-
-    }
-
-    private void backFragment() {
-        if (currentActivityName.contains(READ_ACTIVITY)) {
-            performGlobalAction(GLOBAL_ACTION_BACK);
-        } else if (currentActivityName.contains(IMAGEREAD_ACTIVITY)) {
-
-            performGlobalAction(GLOBAL_ACTION_BACK);
-        }
-
-    }
-
-
-    @Override
-    public void onInterrupt() {
-
-    }
-
-
-    @Override
-    public void onServiceConnected() {
-        super.onServiceConnected();
-        this.watchFlagsFromPreference();
-    }
 
     private void watchFlagsFromPreference() {
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
@@ -348,20 +258,5 @@ public class ReadToutiaoService extends AccessibilityService implements SharedPr
         this.powerUtil.handleWakeLock(watchOnLockFlag);
 
     }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if (key.equals("pref_watch_on_lock")) {
-            Boolean changedValue = sharedPreferences.getBoolean(key, false);
-            this.powerUtil.handleWakeLock(changedValue);
-        }
-    }
-
-    @Override
-    public void onDestroy() {
-        this.powerUtil.handleWakeLock(false);
-        super.onDestroy();
-    }
-
 
 }

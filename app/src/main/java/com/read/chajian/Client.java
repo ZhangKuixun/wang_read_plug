@@ -10,8 +10,12 @@ import android.content.Context;
 import android.os.Handler;
 import android.util.Log;
 import android.view.accessibility.AccessibilityNodeInfo;
+import android.widget.TextView;
 
+import com.blankj.utilcode.util.LogUtils;
 import com.read.chajian.utils.LogUtil;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.util.Arrays;
 import java.util.List;
@@ -23,16 +27,12 @@ public abstract class Client {
     private Context context;
     protected String client;
     protected String TAG = "Client";
-    //判断是否进入了文章页面里
-    private Handler mhandle = new Handler();
 
     public Client(Context context) {
         this.context = context;
     }
 
-    protected abstract boolean init(AccessibilityNodeInfo root);
-
-    protected abstract void parser(AccessibilityNodeInfo group);
+    protected abstract void init(AccessibilityNodeInfo root);
 
     //    protected abstract void onContentChanged();
     public void onContentChanged(AccessibilityNodeInfo root) {
@@ -41,75 +41,19 @@ public abstract class Client {
             return;
         }
 
-        if (!init(root))
-            return;
-        parser(root);
+        init(root);
 
-    }
-
-    //点击文章 ，停留若干时间返回
-    public void onClickContent(AccessibilityNodeInfo root, int time) {
-        if (root == null) {
-            Log.d(TAG, "onContentChanged: root is null, return");
-            return;
-        }
-//        mhandle.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                () context.performGlobalAction(GLOBAL_ACTION_BACK);
-//            }
-//        })
-
-    }
-
-    public boolean hasOneOfThoseNodes(AccessibilityNodeInfo root, String... texts) {
-        List<AccessibilityNodeInfo> nodes;
-        for (String text : texts) {
-            if (text == null) continue;
-
-            nodes = root.findAccessibilityNodeInfosByText(text);
-
-            if (nodes != null && !nodes.isEmpty()) return true;
-        }
-        return false;
-    }
-
-    /**
-     * 获取View By name
-     *
-     * @param info
-     * @param viewName
-     * @return
-     */
-    public static AccessibilityNodeInfo findNodeByViewName(AccessibilityNodeInfo info, String viewName) {
-        String name = info.getClassName().toString();
-        String[] split = name.split("\\.");
-        name = split[split.length - 1];
-        if (name.equals(viewName)) {
-            return info;
-        } else {
-
-            int count = info.getChildCount();
-            if (count > 0) {
-                for (int i = 0; i < count; i++) {
-                    AccessibilityNodeInfo inf = findNodeByViewName(info.getChild(i), viewName);
-                    if (inf != null) {
-                        return inf;
-                    }
-                }
-            } else {
-                return null;
-            }
-        }
-        return null;
     }
 
 
     public static final String RECYCLERVIEWNAME = "android.support.v7.widget.RecyclerView";
 
-    public static final String Button_NAME = "android.widget.Button";
+    public static final String BUTTON_NAME = "android.widget.Button";
 
     public static final String TEXTVIEW_NAME = "android.widget.TextView";
+
+    public static final String WebViewClassName = "android.webkit.WebView";
+
 
     public static final String VIEWPAGER_NAME = "android.support.v4.view.ViewPager";
 
@@ -121,7 +65,7 @@ public abstract class Client {
      * @param ints
      * @return
      */
-    public AccessibilityNodeInfo recycleFindRecyView(AccessibilityNodeInfo node, String type, int... ints) {
+    public AccessibilityNodeInfo recycleFindRecyView(AccessibilityNodeInfo node, String type, String text, int... ints) {
         if (node == null) {
             return null;
         }
@@ -131,19 +75,24 @@ public abstract class Client {
             if (name.equals(type)) {
                 return node;
             }
-        } else if (type.equals(Button_NAME)) {
-            LogUtil.e(name + " " + node.getText());
-            if (name.equals(type) && node.getText().equals("刷新")) {
+        } else if (type.equals(BUTTON_NAME)) {
 
-//                LogUtil.e(printPacketInfo(node));
-                return node;
-            }
-        } else if (type.equals(TEXTVIEW_NAME)) {
-            if (name.equals(type) && node.getText().equals("忽略")) {
-//                LogUtil.e(printPacketInfo(node));
+            if (name.equals(type) && node.getText().equals(text)) {
+                LogUtil.e(node.getText());
                 return node;
             }
         } else if (type.equals(VIEWPAGER_NAME)) {
+            if (name.equals(type)) {
+                return node;
+            }
+        } else if (type.equals(WebViewClassName)) {
+            if(name.equals(type)){
+                LogUtils.e(node);
+            }
+            if (name.equals(type) && node.isScrollable()) {
+                return node;
+            }
+        } else if (type.equals(TEXTVIEW_NAME)) {
             return node;
         }
 
@@ -155,7 +104,7 @@ public abstract class Client {
 
             for (int i = 0; i < count; i++) {
                 newInts[len - 1] = i;
-                AccessibilityNodeInfo result = recycleFindRecyView(node.getChild(i), type, newInts);
+                AccessibilityNodeInfo result = recycleFindRecyView(node.getChild(i), type, text, newInts);
                 if (result == null) {
                     continue;
                 } else {
@@ -207,9 +156,6 @@ public abstract class Client {
         name = split[split.length - 1];
         if ("TextView".equals(name)) {
             CharSequence text = info.getText();
-            if ("刷新".equals(text)) {
-                LogUtil.e(info.getParent().performAction(AccessibilityNodeInfo.ACTION_CLICK));
-            }
             sb.append("text:").append(text);
         } else if ("Button".equals(name)) {
             CharSequence text = info.getText();

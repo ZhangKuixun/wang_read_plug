@@ -37,7 +37,7 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
     private static final String WECHAT_LUCKMONEY_DETAIL_ACTIVITY = "LuckyMoneyDetailUI";
     private static final String WECHAT_LUCKMONEY_GENERAL_ACTIVITY = "LauncherUI";
     private static final String WECHAT_LUCKMONEY_CHATTING_ACTIVITY = "ChattingUI";
-
+    private static final String WebViewClassName = "android.webkit.WebView";
 
     private String currentActivityName = WECHAT_LUCKMONEY_GENERAL_ACTIVITY;
     Handler mhandle = new Handler();
@@ -101,10 +101,6 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
 
                     @Override
                     public void run() {
-                        if (currentActivityName.contains(".main.MainTabActivity")) {
-
-                        }
-                        LogUtil.e(printPacketInfo(eventSource));
                         try {
                             AccessibilityNodeInfo nodes = recycleFindRecyView(eventSource, RECYCLERVIEWNAME, is);
 
@@ -278,7 +274,7 @@ public class HongbaoService extends AccessibilityService implements SharedPrefer
         }
     }
 
-    private static final String WebViewClassName = "android.webkit.WebView";
+
 
     public AccessibilityNodeInfo recycleFindListView(AccessibilityNodeInfo node) {
         if (ObjectUtils.isNotEmpty(node)) {
