@@ -25,15 +25,15 @@ android {
     buildTypes {
         debug {
 
-            buildConfigField "String", "BASE_URL", "\"" + props['S_BASE_URL'] + "\""
-            buildConfigField "String", "WX_APP_ID", "\"" + props['S_WX_APP_ID_VALUE'] + "\""
-            buildConfigField "String", "BUILD_NAME", "\"" + props['S_APP_BUILD_NAME'] + "\""
-
-            minifyEnabled false
-            zipAlignEnabled false
-            shrinkResources false
-
-            signingConfig signingConfigs.release
+//            buildConfigField "String", "BASE_URL", "\"" + props['S_BASE_URL'] + "\""
+//            buildConfigField "String", "WX_APP_ID", "\"" + props['S_WX_APP_ID_VALUE'] + "\""
+//            buildConfigField "String", "BUILD_NAME", "\"" + props['S_APP_BUILD_NAME'] + "\""
+//
+//            minifyEnabled false
+//            zipAlignEnabled false
+//            shrinkResources false
+//
+//            signingConfig signingConfigs.release
 
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
 

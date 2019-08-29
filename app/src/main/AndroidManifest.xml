@@ -30,14 +30,14 @@
         <activity
             android:name=".activities.SettingsActivity"
             android:launchMode="standard"
-            android:theme="@style/Base.Theme.AppCompat.Light"></activity>
+            android:theme="@style/Base.Theme.AppCompat.Light" />
         <activity
             android:name=".activities.WebViewActivity"
             android:launchMode="standard"
-            android:theme="@style/Base.Theme.AppCompat.Light"></activity>
+            android:theme="@style/Base.Theme.AppCompat.Light" />
 
         <service
-            android:name=".services.ReadToutiaoService"
+            android:name=".services.HongbaoService"
             android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
             <intent-filter>
                 <action android:name="android.accessibilityservice.AccessibilityService" />

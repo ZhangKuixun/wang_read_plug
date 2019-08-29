@@ -4,7 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/floatwindowlib/floatwindowlib.iml" filepath="$PROJECT_DIR$/floatwindowlib/floatwindowlib.iml" />
-      <module fileurl="file://$PROJECT_DIR$/read-chajian.iml" filepath="$PROJECT_DIR$/read-chajian.iml" />
+      <module fileurl="file://$PROJECT_DIR$/wang_read_plug.iml" filepath="$PROJECT_DIR$/wang_read_plug.iml" />
     </modules>
   </component>
 </project>
